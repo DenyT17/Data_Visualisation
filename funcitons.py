@@ -61,7 +61,7 @@ def bar_chart_race(data,title):
         period_length=1000,
         figsize=(8, 5),
         dpi=320,
-        cmap='dark12',
+        cmap='earth',
         title=f'{title}',
         title_size='',
         bar_label_size=7,
@@ -70,5 +70,16 @@ def bar_chart_race(data,title):
         scale='linear',
         writer=None,
         fig=None,
-        bar_kwargs={'alpha': .2, 'ec': 'black', 'lw': 3},
+        bar_kwargs={'alpha': .7},
         filter_column_colors=False)
+
+def top_5(data,league_name):
+    data = data.dropna(subset=["fee"])
+    data["Price"] = data.apply(salary_calculated, axis=1)
+    data["Price"] = data["Price"].astype(int)
+    data["Result"] = data.apply(result_calculated, axis=1)
+    data["Sum"] = data['Result'].cumsum()
+    data["League"] = league_name
+    data = data[["League", "year", "Sum"]].pivot_table(index="year", columns="League",
+                                                          values="Sum")
+    return data
