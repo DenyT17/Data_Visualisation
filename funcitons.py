@@ -169,3 +169,11 @@ def line_plot(data):
     # plt.show()
     FFwriter = FFMpegWriter(fps=3)
     ani.save('Top_5.mp4', writer=FFwriter)
+
+def new_column(result):
+    if result == "D":
+        return 1
+    elif result == "W":
+        return 3
+    else:
+        return 0
