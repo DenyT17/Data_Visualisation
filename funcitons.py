@@ -177,3 +177,8 @@ def new_column(result):
         return 3
     else:
         return 0
+
+def select_club_and_season(data : pd.DataFrame, club : list, seasons : int ):
+    data = data[club]
+    data = data[[seasons == s[0] for s in data.index]]
+    return  data
