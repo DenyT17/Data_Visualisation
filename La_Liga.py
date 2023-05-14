@@ -47,11 +47,16 @@ x = []
 rounds = [t[1] for t in data.index]
 years =  [t[0] for t in data.index]
 fig, ax = plt.subplots(figsize=(12, 5))
-# ax.legend(loc='upper left')
+
 ax.set_ylabel('Points')
 ax.set_title("Real Madrid vs Barcelona\nPoint Battle 1999 - 2023")
 for key in clubs:
-    ax.plot(x, clubs[key], linewidth=5, label=key)
+    if key == "Barcelona":
+        color = "blue"
+    elif key == "Real Madrid":
+        color = "yellow"
+    ax.plot(x, clubs[key], linewidth=5, label=key,color=color)
+ax.legend(loc='upper right')
 time = ax.annotate(
     "Time", xy=(0,0),xytext=(0, 0),)
 Real = ax.annotate(
@@ -82,7 +87,11 @@ def update(i):
     # ab_real = AnnotationBbox(real,[10,10], xybox=(30.,-30), boxcoords='offset points')
     # ax.add_artist(ab_real)
     for key in clubs:
-        ax.plot(x, clubs[key], linewidth=5, label=key)
+        if key == "Barcelona":
+            color = "blue"
+        elif key == "Real Madrid":
+            color ="yellow"
+        ax.plot(x, clubs[key], linewidth=10, label=key,color=color)
         if data[key].iloc[idx] > max:
             max = data[key].iloc[idx]
     time.xy = (x_text, max+10)
