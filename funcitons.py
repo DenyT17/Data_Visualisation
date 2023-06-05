@@ -3,10 +3,14 @@ from matplotlib import style
 import bar_chart_race as bcr
 from matplotlib.animation import FuncAnimation, FFMpegWriter
 from itertools import count
+from matplotlib.offsetbox import AnnotationBbox, OffsetImage
 import sys
 import matplotlib.pyplot as plt
 from matplotlib.artist import Artist
 import time
+import mplcyberpunk
+from PIL import Image
+import numpy as np
 def salary_calculated(x):
     if "Loan fee:€" in x["fee"]:
         if "m" in x["fee"]:
@@ -182,3 +186,137 @@ def select_club_and_season(data : pd.DataFrame, club : list, seasons : int ):
     data = data[club]
     data = data[[seasons == s[0] for s in data.index]]
     return  data
+
+def season_data_preparation(data: pd.DataFrame):
+    data.dropna()
+    data = data[["season", "team", "round", "result"]]
+    data['Points'] = data.result.apply(new_column)
+    data['round'] = data['round'].map(lambda x: x.lstrip('Matchweek '))
+    data['round'] = data["round"].astype(int)
+    data = data.sort_values(by=["season", "round"]).reset_index(drop=True)
+    data["Sum"] = data.groupby(['team'])['Points'].cumsum()
+    data["Season_round"] = data["season"].astype(str) + "-" + data["round"].astype(str)
+    data = data[["team", "season", "round", "Sum"]].pivot_table(index=["round"], columns="team", values="Sum")
+    data = data.fillna(value=0)
+    max = 0
+    for x in data.columns.values:
+        for index, row in data.iterrows():
+            if max < row[x]:
+                max = row[x]
+            if row[x] == 0:
+                row[x] = max
+        max = 0
+    data.loc[0] = 0
+    data.sort_index(inplace=True)
+    return data
+
+def season_plot(data: pd.DataFrame, img_path:str):
+    print(data)
+    PL_img = Image.open(r"C:\Users\Dtopa\OneDrive\Pulpit\ML\Data_Visualisation\Data\SA.png").convert('RGB')
+    PL_img = PL_img.resize((np.array(PL_img.size)/2.5).astype(int))
+    clubs = {}
+    teams_img = {}
+    teams = {}
+    for team in data.columns:
+        teams[team] = []
+    for team in data.columns:
+        teams_img[team] = Image.open(
+            fr"{img_path}\{team}.png").convert('RGB')
+        teams_img[team] = teams_img[team].resize((np.array(teams_img[team].size) / 5).astype(int))
+    for club in data.columns:
+        clubs[club] = []
+    x = []
+    teams_colors = {}
+    plt.style.use("cyberpunk")
+    fig, ax = plt.subplots(figsize=(12, 6))
+    box = ax.get_position()
+    ax.set_position([box.x0, box.y0 + box.height * 0.1,
+                     box.width*0.85, box.height * 0.9])
+    for key in clubs:
+        teams_colors[key] = (np.random.random(), np.random.random(), np.random.random())
+        ax.plot(x, clubs[key], linewidth=5, label=key, color=teams_colors[key])
+    counter = count(0, 1)
+    def update(i):
+        ax.cla()
+        ax.set_ylabel('Points')
+        ax.set_xlabel('Round')
+        ax.set_title("Serie A - Title Battle\nSeason 2022/2023")
+
+        idx = next(counter)
+        max = 0
+        try:
+            x.append(idx)
+            for key in clubs:
+                clubs[key].append(data[key].iloc[idx])
+                if data[key].iloc[idx] > max:
+                    max = data[key].iloc[idx]
+        except IndexError:
+            time.sleep(2)
+            sys.exit(1)
+        for key in teams:
+            for img in teams_img:
+                if key == img:
+                    color = teams_colors[key]
+                    ax.add_artist(AnnotationBbox(OffsetImage(teams_img[img]),
+                                                 (idx, data[key].iloc[idx]),
+                                                 bboxprops=dict(edgecolor=color, boxstyle="Circle, pad=1")))
+        if idx - 10 > 0:
+            ax.set_xlim(idx - 10, idx + 2)
+            ax.set_ylim(max - 22, max + 5)
+            pl_x = idx - 9
+            pl_y = max
+        else:
+            ax.set_xlim(0, 12)
+            ax.set_ylim(0, 30)
+            pl_x = 1
+            pl_y = 25
+        for key in clubs:
+
+            ax.plot(x, clubs[key], linewidth=9, label=key, color=teams_colors[key])
+            ax.add_artist(AnnotationBbox(OffsetImage(PL_img),
+                                         (pl_x, pl_y),
+                                         bboxprops=dict(boxstyle="Circle, pad=1.2",ec="Green", lw=2)))
+            ax.legend(bbox_to_anchor=(1.315, 1.009), borderaxespad=0,facecolor="white")
+            if data[key].iloc[idx] > max:
+                max = data[key].iloc[idx]
+    ani = FuncAnimation(fig=fig, func=update, frames=38,interval=10)
+    FFwriter = FFMpegWriter(fps=3)
+    ani.save('SA2022_2023.mp4', writer=FFwriter)
+    # plt.show()
+
+def disney(data:pd.DataFrame):
+    films = {}
+    film_colors = {}
+    for film in data.columns:
+        films[film] = []
+    x = []
+    plt.style.use("cyberpunk")
+    fig, ax = plt.subplots(figsize=(12, 6))
+    for key in films:
+        film_colors[key] = (np.random.random(), np.random.random(), np.random.random())
+        ax.barh(x, films[key], linewidth=5, label=key, color=film_colors[key])
+    counter = count(0, 1)
+    def update(i):
+        ax.cla()
+        idx = next(counter)
+        max = 0
+        ax.set_ylim(0, 5)
+        ax.set_xlim(0, max)
+        try:
+            x.append(idx)
+            for key in films:
+                films[key].append(data[key].iloc[idx])
+                if data[key].iloc[idx] > max:
+                    max = data[key].iloc[idx]
+        except IndexError:
+            time.sleep(2)
+            sys.exit(1)
+
+        for key in films:
+
+            ax.barh(x, films[key], linewidth=9, label=key, color=film_colors[key])
+
+    ani = FuncAnimation(fig=fig, func=update, frames=38,interval=10)
+    # FFwriter = FFMpegWriter(fps=3)
+    # ani.save('SA2022_2023.mp4', writer=FFwriter)
+    plt.show()
